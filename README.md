@@ -10,7 +10,7 @@ func ConnectDB(ctx context.Context) (*sql.DB, error) {
     }
     return db, nil
 }
-createDB := lazy.Me(ctx, ConnectDB, WithRetry(iters.Of(time.Millisecond)))
+createDB := lazy.Me(ctx, ConnectDB, WithRetry(iters.Trim(iters.Repeat(time.Second), 5))
 ...
 v, err := connectDB(ctx)
 ```
