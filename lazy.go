@@ -23,7 +23,8 @@ func WithRetry(delays iter.Seq[time.Duration]) func(opts *options) {
 	}
 }
 
-// Me creates lazy initializer.
+// Me creates lazy initializer. It immediately returns a function that returns an object and triggers the creation of the object.
+// After the first unsuccessful creator call, it returns the error, however will try to recreate the object, if retries are defined.
 func Me[T any](ctx context.Context, creator func(ctx context.Context) (T, error), opts ...option) func(ctx context.Context) (T, error) {
 	var obj T
 	var err error
