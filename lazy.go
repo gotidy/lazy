@@ -3,6 +3,7 @@ package lazy
 
 import (
 	"context"
+	"fmt"
 	"iter"
 	"sync"
 	"time"
@@ -42,8 +43,11 @@ func Me[T any](ctx context.Context, creator func(ctx context.Context) (T, error)
 		if err == nil {
 			return
 		}
-		for range iters.RetryAfterDelay(ctx, options.retryDelays) {
+		for attempt, delay := range iters.RetryAfterDelay(ctx, options.retryDelays) {
 			retryObj, retryErr := creator(ctx)
+			if retryErr != nil {
+				retryErr = fmt.Errorf("retry: attempt: %d; delay: %s: %v", attempt, delay, retryErr)
+			}
 			mu.Lock()
 			obj, err = retryObj, retryErr
 			mu.Unlock()
