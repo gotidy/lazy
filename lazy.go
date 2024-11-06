@@ -1,4 +1,4 @@
-// Allows to initialize something in parallel without stopping the main process.
+// Package allows to initialize something in parallel without stopping the main process.
 package lazy
 
 import (
