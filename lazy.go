@@ -1,3 +1,4 @@
+// Allows to initialize something in parallel without stopping the main process.
 package lazy
 
 import (
@@ -15,12 +16,14 @@ type options struct {
 
 type option func(opts *options)
 
+// WithRetry adds retries.
 func WithRetry(delays iter.Seq[time.Duration]) func(opts *options) {
 	return func(opts *options) {
 		opts.retryDelays = delays
 	}
 }
 
+// Me creates lazy initializer.
 func Me[T any](ctx context.Context, creator func(ctx context.Context) (T, error), opts ...option) func(ctx context.Context) (T, error) {
 	var obj T
 	var err error
@@ -35,12 +38,15 @@ func Me[T any](ctx context.Context, creator func(ctx context.Context) (T, error)
 	go func() {
 		obj, err = creator(ctx)
 		close(done)
+		if err == nil {
+			return
+		}
 		for range iters.RetryAfterDelay(ctx, options.retryDelays) {
 			retryObj, retryErr := creator(ctx)
 			mu.Lock()
 			obj, err = retryObj, retryErr
 			mu.Unlock()
-			if err == nil {
+			if retryErr == nil {
 				break
 			}
 		}
@@ -50,7 +56,8 @@ func Me[T any](ctx context.Context, creator func(ctx context.Context) (T, error)
 		select {
 		case <-done:
 		case <-ctx.Done():
-			return obj, ctx.Err()
+			var zero T
+			return zero, ctx.Err()
 		}
 		mu.Lock()
 		defer mu.Unlock()
